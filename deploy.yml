@@ -1,0 +1,52 @@
+---
+- name: Deploy Docker application
+  hosts: all
+  become: yes
+  vars:
+    app_name: "test_jan"
+    app_port: 3000
+    host_port: 80
+    aws_region: "us-east-1"
+    ecr_registry: "507210367072.dkr.ecr.us-east-1.amazonaws.com"   # ← додай свій Account ID
+    docker_image: "507210367072.dkr.ecr.us-east-1.amazonaws.com/test_jan"  # ← додай
+  tasks:
+    - name: Ensure Docker is running
+      systemd:
+        name: docker
+        state: started
+
+    - name: Authenticate to AWS ECR
+      shell: |
+        aws ecr get-login-password --region {{ aws_region }} | \
+          docker login --username AWS --password-stdin {{ ecr_registry }}
+      no_log: false
+
+    - name: Pull latest Docker image
+      docker_image:
+        name: "{{ docker_image }}"
+        source: pull
+        force_source: yes
+
+    - name: Stop existing container
+      docker_container:
+        name: "{{ app_name }}"
+        state: absent
+      ignore_errors: yes
+
+    - name: Run new container
+      docker_container:
+        name: "{{ app_name }}"
+        image: "{{ docker_image }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "{{ host_port }}:{{ app_port }}"
+
+    - name: Wait for app to be healthy
+      uri:
+        url: "http://localhost:{{ app_port }}/health"
+        status_code: 200
+      register: health_check
+      retries: 10
+      delay: 5
+      until: health_check.status == 200
