@@ -42,3 +42,11 @@
         ports:
           - "{{ host_port }}:{{ app_port }}"
 
+    - name: Wait for app to be healthy
+      uri:
+        url: "http://localhost:{{ app_port }}/health"
+        status_code: 200
+      register: health_check
+      retries: 10
+      delay: 5
+      until: health_check.status == 200
