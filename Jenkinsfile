@@ -2,10 +2,10 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION     = 'us-east-1'
-        ECR_REGISTRY   = '507210367072.dkr.ecr.us-east-1.amazonaws.com'
-        ECR_REPO       = 'test_jan'
-        IMAGE_TAG      = "${env.BUILD_NUMBER}"
+        AWS_REGION   = 'us-east-1'
+        ECR_REGISTRY = '507210367072.dkr.ecr.us-east-1.amazonaws.com'
+        ECR_REPO     = 'test_jan'
+        IMAGE_TAG    = "${env.BUILD_NUMBER}"
     }
 
     options {
@@ -15,6 +15,7 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -24,52 +25,69 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh """
+                sh '''
+                    set -e
+
                     docker build \
-                      --build-arg BUILD_DATE=\$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+                      --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
                       -t ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG} \
                       -t ${ECR_REGISTRY}/${ECR_REPO}:latest \
                       .
-                """
+                '''
             }
         }
 
         stage('Push to ECR') {
             steps {
-                sh """
+                sh '''
+                    set -e
+
                     aws ecr get-login-password --region ${AWS_REGION} | \
                       docker login --username AWS \
                       --password-stdin ${ECR_REGISTRY}
 
                     docker push ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}
                     docker push ${ECR_REGISTRY}/${ECR_REPO}:latest
-                """
+                '''
             }
         }
 
         stage('Deploy with Ansible') {
             steps {
-		withCredentials([sshUserPrivateKey(
-		    credentialsId: 'priv_key',
-	            keyFileVariable: 'SSH_KEY'
-            )]) {
-                sh """
-                    ansible-playbook \
-                      -i ansible/hosts \
-                      ansible/deploy.yml \
-                      -e "docker_image=${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
-                """
+
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'priv_key',
+                        keyFileVariable: 'SSH_KEY'
+                    )
+                ]) {
+
+                    sh '''
+                        set -e
+
+                        export ANSIBLE_HOST_KEY_CHECKING=False
+
+                        ansible-playbook \
+                          -i ansible/hosts \
+                          ansible/deploy.yml \
+                          --private-key $SSH_KEY \
+                          -e "docker_image=${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
+                    '''
+                }
             }
         }
     }
 
     post {
+
         success {
             echo "✅ Success! Image: ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
         }
+
         failure {
             echo "❌ Pipeline failed!"
         }
+
         always {
             sh 'docker image prune -f'
         }
