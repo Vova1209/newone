@@ -50,7 +50,7 @@ pipeline {
         stage('Deploy with Ansible') {
             steps {
 		withCredentials([sshUserPrivateKey(
-		    credentialsId: 'deploy-key',
+		    credentialsId: 'priv_key',
 	            keyFileVariable: 'SSH_KEY'
             )]) {
                 sh """
