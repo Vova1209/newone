@@ -45,10 +45,10 @@
 [jenkins_master]
 #195.191.24.92  ansible_hosts=195.191.24.92 ansible_user=root ansible_port=22
 #194.28.87.18 ansible_hosts=194.28.87.18 ansible_user=root ansible_port=22
-100.52.188.255  ansible_hosts=100.52.188.255 ansible_user=ec2-user ansible_port=22 ansible_ssh_private_key_file=/home/test_jan/local.pem
+3.231.31.229  ansible_hosts=3.231.31.229 ansible_user=ec2-user ansible_port=22 ansible_ssh_private_key_file=/home/test_jan/local.pem
 
 [app_servers]
-98.80.190.197  ansible_hosts=98.80.190.197 ansible_user=ec2-user ansible_port=22 ansible_ssh_private_key_file=/home/test_jan/local.pem
+44.204.247.127  ansible_hosts=44.204.247.127 ansible_user=ec2-user ansible_port=22 ansible_ssh_private_key_file=/home/test_jan/local.pem
 
 
 
