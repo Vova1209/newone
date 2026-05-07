@@ -51,8 +51,8 @@ pipeline {
             steps {
                 sh """
                     ansible-playbook \
-                      -i /home/test_jan/hosts \
-                      /home/test_jan/deploy.yml \
+                      -i ansible/hosts \
+                      ansible/deploy.yml \
                       -e "docker_image=${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
                 """
             }
