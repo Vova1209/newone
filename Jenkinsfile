@@ -49,6 +49,10 @@ pipeline {
 
         stage('Deploy with Ansible') {
             steps {
+		withCredentials([sshUserPrivateKey(
+		    credentialsId: 'deploy-key',
+	            keyFileVariable: 'SSH_KEY'
+            )]) {
                 sh """
                     ansible-playbook \
                       -i ansible/hosts \
